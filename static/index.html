@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.0.0/crypto-js.min.js"></script>
+    <title>控制分頁和iframe</title>
+</head>
+<body>
+    <h1>輸入 Iframe URL 和 User ID</h1>
+    <div>
+        <label for="userId">User ID:</label>
+        <input type="text" id="userId" placeholder="輸入用戶ID">
+    </div>
+    <div>
+        <label for="iframeURL">Iframe URL:</label>
+        <input type="text" id="iframeURL" placeholder="輸入Iframe URL">
+    </div>
+    <button onclick="openIframePage()">開啟新分頁</button>
+
+    <script>
+      let newWindow = null;
+      let ws = null;
+      // 加密Iframe URL
+      function encryptURL(iframeURL) {
+          return CryptoJS.AES.encrypt(iframeURL, 'secret_key').toString();
+      }
+      // 檢查輸入
+      function validateInputs(userId, iframeURL) {
+          if (!userId || !iframeURL) {
+              alert('請輸入用戶ID和Iframe URL');
+              return false;
+          }
+          return true;
+      }
+      // 開啟新分頁
+      function openIframePage() {
+          const userId = document.getElementById('userId').value;
+          const iframeURL = document.getElementById('iframeURL').value;
+  
+          // 验证用户输入
+          if (!validateInputs(userId, iframeURL)) return;
+  
+          // 加密Iframe URL
+          const encryptedURL = encryptURL(iframeURL);
+  
+          console.log('加密后的URL:', encryptedURL); // 调试输出，确保加密后的URL
+  
+          // 打开带有加密URL的新窗口
+          newWindow = window.open(`/iframe-page?url=${encodeURIComponent(encryptedURL)}&userId=${encodeURIComponent(userId)}`, '_blank');
+  
+          // 初始化WebSocket
+          initWebSocket(userId);
+      }
+      // 初始化 ws
+      function initWebSocket(userId) {
+          ws = new WebSocket(`ws://localhost:8080/ws?userId=${userId}`);
+          
+          ws.onmessage = function(event) {
+              handleWebSocketMessage(event);
+          };
+      }
+      // 處理 WebSocket 消息
+      function handleWebSocketMessage(event) {
+          if (event.data === 'close') {
+              closeNewWindow();
+          }
+      }
+      // 關閉新分頁
+      function closeNewWindow() {
+          if (newWindow) {
+              newWindow.close();
+              newWindow = null;
+          }
+      }
+  </script>
+  
+</body>
+</html>
